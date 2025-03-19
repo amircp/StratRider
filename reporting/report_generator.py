@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import plotly
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
@@ -342,17 +343,37 @@ class ReportGenerator:
                 'entry_type': trade['entry_type'],
                 'entry_price': float(trade['entry_price']),
                 'exit_time': trade['exit_time'].strftime('%Y-%m-%d %H:%M') if pd.notna(trade['exit_time']) else "N/A",
-                'exit_price': float(trade['exit_price']) if pd.notna(trade['exit_price']) else 0.0,
+                'exit_price': float(trade['exit_price']),
                 'profit_loss': float(trade['profit_loss']) if pd.notna(trade['profit_loss']) else 0.0,
                 'profit_loss_pct': float(trade['profit_loss_pct']) if pd.notna(trade['profit_loss_pct']) else 0.0,
                 'duration_str': duration_str
             })
         
+
+        # Pre-procesar las métricas para garantizar que todos los valores sean simples (no diccionarios)
+        processed_metrics = {}
+        for key, value in metrics.items():
+            if key not in ['equity_curve', 'trades', 'result_data']:
+                # Si es un diccionario, convertirlo a string
+                if isinstance(value, dict):
+                    processed_metrics[key] = str(value)
+                # Si es un número, mantenerlo como número
+                elif isinstance(value, (int, float)):
+                    processed_metrics[key] = value
+                # Para otros tipos, convertir a string
+                else:
+                    processed_metrics[key] = str(value)
+            else:
+                # Mantener los objetos de datos grandes sin cambios
+                processed_metrics[key] = value
+
+        trades_table_html = self.generate_trades_table(backtest_result['trades'])
+
         # Preparar datos para la plantilla
         template_data = {
             'title': f"Reporte de Backtesting - {backtest_result['strategy_name']}",
             'subtitle': f"Período: {backtest_result['equity_curve'].index[0].strftime('%Y-%m-%d')} a {backtest_result['equity_curve'].index[-1].strftime('%Y-%m-%d')}",
-            'metrics': metrics,
+            'metrics': processed_metrics,
             'trades': trades_data,
             'strategy_name': backtest_result['strategy_name'],
             'generation_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -360,6 +381,7 @@ class ReportGenerator:
             'drawdown_chart_js': drawdown_chart_js,
             'returns_distribution_chart_js': returns_distribution_chart_js,
             'monthly_returns_chart_js': monthly_returns_chart_js,
+            'trades_table_html': trades_table_html,
             'isinstance': isinstance
         }
         
@@ -387,117 +409,128 @@ class ReportGenerator:
             f.write(html_content)
         
         return output_path
-    
+
+
     def generate_equity_curve_chart(self, equity_data: pd.DataFrame) -> str:
-        """
-        Genera el JavaScript para el gráfico de curva de equidad.
-        
-        Args:
-            equity_data: DataFrame con datos de equidad
-            
-        Returns:
-            JavaScript para crear el gráfico con Plotly
-        """
-        # Crear gráfico
+
+
+        # Convertir los datos a listas puras de Python
+        timestamps = equity_data.index.astype(str).tolist()  # Convertir fechas a strings
+        equities = equity_data['equity'].astype(float).tolist()  # Asegurar floats y convertir a lista
+
+
+        # Crear la figura
         fig = go.Figure()
-        
-        # Añadir línea de equidad
+
         fig.add_trace(go.Scatter(
-            x=equity_data.index,
-            y=equity_data['equity'],
+            x=timestamps,  # Lista de strings
+            y=equities,  # Lista de floats
             mode='lines',
             name='Equidad',
             line=dict(color='rgb(49, 130, 189)', width=2)
         ))
-        
-        # Configurar diseño
-        fig.update_layout(
-            title='Curva de Equidad',
-            xaxis_title='Fecha',
-            yaxis_title='Equidad',
-            hovermode='x unified',
-            template='plotly_white'
-        )
-        
-        # Convertir a JavaScript
-        fig_json = fig.to_json()
+
+        # Serializar correctamente usando el encoder de Plotly
+        fig_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
         js_code = f"""
         var equityChartData = {fig_json};
         Plotly.newPlot('equity-chart', equityChartData.data, equityChartData.layout);
         """
-        
+
         return js_code
+
+    import json
+    import plotly.graph_objects as go
+    import plotly.utils
+
     def generate_drawdown_chart(self, drawdown_data: pd.DataFrame) -> str:
         """
         Genera el JavaScript para el gráfico de drawdown.
-        
+
         Args:
             drawdown_data: DataFrame con datos de drawdown
-            
+
         Returns:
             JavaScript para crear el gráfico con Plotly
         """
-        # Crear gráfico
+        # Convertir drawdown_pct a lista de floats
+        drawdown_pct = drawdown_data['drawdown_pct'].astype(float).tolist()  # Convertir a lista de floats
+        timestamps = drawdown_data.index.astype(str).tolist()  # Convertir fechas a string
+
+        # Aplicar signo negativo a cada elemento de drawdown_pct
+        drawdown_pct = [-x for x in drawdown_pct]  # Invertir el signo de cada valor de drawdown_pct
+
+        print(type(timestamps), type(drawdown_pct))  # Verifica que sean listas
+        print(timestamps[:5], drawdown_pct[:5])  # Imprime una muestra para ver la conversión
+
+        # Crear el gráfico
         fig = go.Figure()
-        
-        # Añadir línea de drawdown
+
         fig.add_trace(go.Scatter(
-            x=drawdown_data.index,
-            y=-drawdown_data['drawdown_pct'],  # Negativo para mostrar hacia abajo
+            x=timestamps,  # Lista de fechas como strings
+            y=drawdown_pct,  # Lista de drawdowns negativos
             mode='lines',
             name='Drawdown',
             fill='tozeroy',
             line=dict(color='rgba(255, 65, 54, 0.8)', width=1)
         ))
-        
-        # Configurar diseño
+
+        # Configurar layout
         fig.update_layout(
-            title='Drawdown (%)',
-            xaxis_title='Fecha',
-            yaxis_title='Drawdown (%)',
             yaxis=dict(
                 tickformat='.2f',
                 ticksuffix='%',
-                range=[None, 0]  # CAMBIAR ESTA LÍNEA: de rangemode='nonpositive' a range=[None, 0]
+                range=[min(drawdown_pct) * 1.1, 0],  # Ajuste para mostrar el rango completo
+                title='Drawdown (%)'
             ),
+            title='Drawdown (%)',
+            xaxis_title='Fecha',
+            yaxis_title='Drawdown (%)',
             hovermode='x unified',
             template='plotly_white'
         )
+
         # Convertir a JavaScript
-        fig_json = fig.to_json()
+        fig_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
         js_code = f"""
         var drawdownChartData = {fig_json};
         Plotly.newPlot('drawdown-chart', drawdownChartData.data, drawdownChartData.layout);
         """
-        
+
         return js_code
-    
+
     def generate_returns_distribution_chart(self, returns: pd.Series) -> str:
         """
         Genera el JavaScript para el gráfico de distribución de rendimientos.
-        
+
         Args:
             returns: Serie con rendimientos diarios
-            
+
         Returns:
             JavaScript para crear el gráfico con Plotly
         """
-        # Convertir a porcentaje para mejor visualización
-        returns_pct = returns * 100
-        
+        # Convertir a porcentaje para mejor visualización y a lista Python
+        returns_pct = (returns * 100).astype(float).tolist()
+
+        # Calcular tamaño de bins de forma robusta
+        if len(returns_pct) > 1:
+            bin_size = (max(returns_pct) - min(returns_pct)) / 50
+        else:
+            bin_size = 0.1
+
         # Crear histograma
         fig = go.Figure()
-        
+
         # Añadir histograma de rendimientos
         fig.add_trace(go.Histogram(
             x=returns_pct,
             name='Rendimientos',
             marker_color='rgba(49, 130, 189, 0.7)',
-            xbins=dict(
-                size=(returns_pct.max() - returns_pct.min()) / 50  # 50 bins
-            )
+            xbins=dict(size=bin_size)
         ))
-        
+
         # Añadir línea vertical en 0
         fig.add_shape(
             type='line',
@@ -506,7 +539,7 @@ class ReportGenerator:
             yref='paper',
             line=dict(color='red', width=2, dash='dash')
         )
-        
+
         # Configurar diseño
         fig.update_layout(
             title='Distribución de Rendimientos Diarios',
@@ -515,95 +548,110 @@ class ReportGenerator:
             template='plotly_white',
             bargap=0.1
         )
-        
-        # Convertir a JavaScript
-        fig_json = fig.to_json()
+
+        # Convertir a JavaScript usando el encoder correcto
+        fig_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
         js_code = f"""
         var returnsDistributionData = {fig_json};
         Plotly.newPlot('returns-distribution-chart', returnsDistributionData.data, returnsDistributionData.layout);
         """
-        
+
         return js_code
-    
+
     def generate_monthly_returns_heatmap(self, returns: pd.Series) -> str:
         """
         Genera el JavaScript para el mapa de calor de rendimientos mensuales.
-        
+
         Args:
             returns: Serie con rendimientos diarios
-            
+
         Returns:
             JavaScript para crear el gráfico con Plotly
         """
-        # Asegurar que el índice es datetime
-        if not isinstance(returns.index, pd.DatetimeIndex):
-            # Intento de conversión, pero podría fallar dependiendo de los datos
-            try:
-                returns.index = pd.to_datetime(returns.index)
-            except:
-                # Si falla, devolver un gráfico vacío
-                empty_js = """
-                Plotly.newPlot('monthly-returns-chart', [], {title: 'No hay datos disponibles para rendimientos mensuales'});
-                """
-                return empty_js
-        
-        # Calcular rendimientos mensuales
-        monthly_returns = returns.resample('ME').apply(lambda x: (1 + x).prod() - 1) * 100
-        
-        # Crear DataFrame con Año y Mes como columnas
-        monthly_df = pd.DataFrame({
-            'year': monthly_returns.index.year,
-            'month': monthly_returns.index.month,
-            'return': monthly_returns.values
-        })
-        
-        # Pivotar para crear matriz de año x mes
-        pivot_table = monthly_df.pivot_table(
-            index='year', 
-            columns='month', 
-            values='return',
-            aggfunc='first'
-        )
-        
-        # Nombres de meses para etiquetas
-        month_names = [calendar.month_abbr[i] for i in range(1, 13)]
-        
-        # Crear mapa de calor
-        fig = go.Figure(data=go.Heatmap(
-            z=pivot_table.values,
-            x=month_names,
-            y=pivot_table.index,
-            colorscale='RdBu',
-            zmid=0,  # Centrar en 0 para que rojo sea negativo y azul positivo
-            text=np.around(pivot_table.values, 2),
-            hovertemplate='%{y}, %{x}: %{z:.2f}%<extra></extra>',
-            colorbar=dict(title='Rendimiento (%)')
-        ))
-        
-        # Configurar diseño
-        fig.update_layout(
-            title='Rendimientos Mensuales (%)',
-            xaxis_title='Mes',
-            yaxis_title='Año',
-            template='plotly_white'
-        )
-        
-        # Convertir a JavaScript
-        fig_json = fig.to_json()
-        js_code = f"""
-        var monthlyReturnsData = {fig_json};
-        Plotly.newPlot('monthly-returns-chart', monthlyReturnsData.data, monthlyReturnsData.layout);
-        """
-        
-        return js_code
-    
+        try:
+            # Asegurar que el índice es datetime
+            if not isinstance(returns.index, pd.DatetimeIndex):
+                try:
+                    returns.index = pd.to_datetime(returns.index)
+                except:
+                    empty_js = """
+                    Plotly.newPlot('monthly-returns-chart', [], {title: 'No hay datos disponibles para rendimientos mensuales'});
+                    """
+                    return empty_js
+
+            # Calcular rendimientos mensuales
+            monthly_returns = returns.resample('ME').apply(lambda x: (1 + x).prod() - 1) * 100
+
+            # Crear DataFrame con Año y Mes como columnas
+            monthly_df = pd.DataFrame({
+                'year': monthly_returns.index.year,
+                'month': monthly_returns.index.month,
+                'return': monthly_returns.values
+            })
+
+            # Pivotar para crear matriz de año x mes
+            pivot_table = monthly_df.pivot_table(
+                index='year',
+                columns='month',
+                values='return',
+                aggfunc='first'
+            )
+
+            # Preparar datos para Plotly
+            z_values = pivot_table.values.tolist()  # Convertir a lista de listas Python
+            y_values = pivot_table.index.astype(int).tolist()  # Años como enteros
+
+            # Nombres de meses para etiquetas
+            month_names = [calendar.month_abbr[i] for i in range(1, 13)]
+
+            # Asegurar que tenemos valores para el texto (redondeados)
+            text_values = np.round(pivot_table.values, 2).tolist()
+
+            # Crear mapa de calor
+            fig = go.Figure(data=go.Heatmap(
+                z=z_values,
+                x=month_names,
+                y=y_values,
+                colorscale='RdBu',
+                zmid=0,  # Centrar en 0 para que rojo sea negativo y azul positivo
+                text=text_values,
+                hovertemplate='%{y}, %{x}: %{z:.2f}%<extra></extra>',
+                colorbar=dict(title='Rendimiento (%)')
+            ))
+
+            # Configurar diseño
+            fig.update_layout(
+                title='Rendimientos Mensuales (%)',
+                xaxis_title='Mes',
+                yaxis_title='Año',
+                template='plotly_white'
+            )
+
+            # Convertir a JavaScript usando el encoder correcto
+            fig_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
+            js_code = f"""
+            var monthlyReturnsData = {fig_json};
+            Plotly.newPlot('monthly-returns-chart', monthlyReturnsData.data, monthlyReturnsData.layout);
+            """
+
+            return js_code
+
+        except Exception as e:
+            print(f"Error en generate_monthly_returns_heatmap: {e}")
+            empty_js = f"""
+            Plotly.newPlot('monthly-returns-chart', [], {{title: 'Error al generar el mapa de calor: {str(e)}'}});
+            """
+            return empty_js
+
     def generate_trades_table(self, trades: pd.DataFrame) -> str:
         """
-        Genera el HTML para la tabla de operaciones.
-        
+        Genera el HTML para la tabla de operaciones con información detallada.
+
         Args:
             trades: DataFrame con datos de operaciones
-            
+
         Returns:
             HTML para la tabla de operaciones
         """
@@ -621,38 +669,56 @@ class ReportGenerator:
                         <th>P/L</th>
                         <th>P/L %</th>
                         <th>Duración</th>
+                        <th>Tamaño Posición Est.</th>
                     </tr>
                 </thead>
                 <tbody>
         """
-        
+
         for _, trade in trades.iterrows():
             # Determinar clase CSS basada en el P/L
             row_class = "positive" if trade['profit_loss'] > 0 else "negative"
-            
+
             # Formatear duración
             if isinstance(trade['duration'], pd.Timedelta):
                 duration_str = str(trade['duration']).split('.')[0]  # Eliminar microsegundos
             else:
                 duration_str = "N/A"
-            
+
+            # Calcular tamaño de posición estimado basado en P/L
+            if trade['entry_type'] == 'BUY':
+                price_diff = float(trade['exit_price']) - float(trade['entry_price'])
+            else:
+                price_diff = float(trade['entry_price']) - float(trade['exit_price'])
+
+            # Evitar división por cero
+            estimated_position_size = float('NaN')
+            if abs(price_diff) > 0.0001:
+                estimated_position_size = float(trade['profit_loss']) / price_diff
+
             html += f"""
                 <tr class="{row_class}">
-                    <td>{trade['entry_time'].strftime('%Y-%m-%d %H:%M')}</td>
+                    <td>{trade['entry_time'].strftime('%Y-%m-%d %H:%M') if hasattr(trade['entry_time'], 'strftime') else trade['entry_time']}</td>
                     <td>{trade['entry_type']}</td>
-                    <td>{trade['entry_price']:.2f}</td>
-                    <td>{trade['exit_time'].strftime('%Y-%m-%d %H:%M') if pd.notna(trade['exit_time']) else "N/A"}</td>
-                    <td>{trade['exit_price']:.2f if pd.notna(trade['exit_price']) else 0.0}</td>
-                    <td>{trade['profit_loss']:.2f if pd.notna(trade['profit_loss']) else 0.0}</td>
-                    <td>{trade['profit_loss_pct']:.2f}% if pd.notna(trade['profit_loss_pct']) else 0.0</td>
+                    <td>{float(trade['entry_price']):.2f}</td>
+                    <td>{trade['exit_time'].strftime('%Y-%m-%d %H:%M') if hasattr(trade['exit_time'], 'strftime') and pd.notna(trade['exit_time']) else trade['exit_time'] if pd.notna(trade['exit_time']) else "N/A"}</td>
+                    <td>{float(trade['exit_price'])}</td>
+                    <td>{float(trade['profit_loss']):.2f}</td>
+                    <td>{float(trade['profit_loss_pct']):.2f}%</td>
                     <td>{duration_str}</td>
+                    <td>{estimated_position_size:.4f}</td>
                 </tr>
             """
-        
+
         html += """
                 </tbody>
             </table>
         </div>
+        <div class="trade-explanation" style="margin-top: 10px; padding: 10px; background-color: #f8f9fa; border-radius: 5px;">
+            <p><strong>Nota sobre el P/L:</strong> El P/L mostrado es un múltiplo de la diferencia de precio porque se están operando múltiples unidades.</p>
+            <p><strong>Fórmula:</strong> P/L = (Precio Salida - Precio Entrada) × Tamaño Posición (para operaciones largas)</p>
+            <p>La columna "Tamaño Posición Est." muestra cuántas unidades se operaron en cada trade, calculado como P/L ÷ DiferenciaPrecio.</p>
+        </div>
         """
-        
+
         return html
