@@ -1,0 +1,7 @@
+Symbol,Strategy,Return (%),CAGR (%),Sharpe,Max DD (%),Win Rate (%),Profit Factor,Trades
+BTC/USDT,"MA Crossover (20,50)",12.13,13.92,0.09,31.38,31.0,0.73,100
+BTC/USDT,"MA Crossover (10,30)",-1.14,-11.65,-0.01,35.66,31.3,1.10,166
+BTC/USDT,"Bollinger Breakout (20,2)",10.93,13.02,0.08,31.11,36.4,1.15,99
+ETH/USDT,"MA Crossover (20,50)",-38.43,-63.80,-0.20,57.90,30.6,0.85,108
+ETH/USDT,"MA Crossover (10,30)",-48.59,-69.78,-0.26,59.78,39.0,1.04,164
+ETH/USDT,"Bollinger Breakout (20,2)",-38.18,-62.15,-0.22,56.90,30.6,0.75,111
