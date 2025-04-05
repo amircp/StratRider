@@ -172,3 +172,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+bin/
+.idea/
+yahoo_reports/
+reports/
+share/
