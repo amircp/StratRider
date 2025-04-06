@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        /* Estilos generales */
+        body {
+            font-family: 'Roboto', 'Segoe UI', Tahoma, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Encabezado */
+        .header {
+            background-color: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 25px 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .header p {
+            margin: 5px 0 0;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        /* Secciones */
+        .section {
+            background-color: #fff;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            background-color: #f9f9f9;
+        }
+
+        .section-header h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .section-content {
+            padding: 20px;
+        }
+
+        /* Grid para métricas */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .metric-card {
+            background-color: #f8f9fa;
+            border-left: 3px solid #3498db;
+            padding: 15px;
+            border-radius: 3px;
+        }
+
+        .metric-title {
+            font-size: 13px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-value {
+            font-size: 22px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .metric-positive {
+            color: #27ae60;
+        }
+
+        .metric-negative {
+            color: #e74c3c;
+        }
+
+        /* Tablas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #f5f7fa;
+            color: #34495e;
+            font-weight: 500;
+            text-align: left;
+            padding: 12px 15px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        td {
+            padding: 10px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover {
+            background-color: #f1f5f9;
+        }
+
+        /* Gráficos */
+        .chart-container {
+            height: auto;
+            position: relative;
+            margin-bottom: 15px;
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chart-placeholder {
+            color: #7f8c8d;
+            font-size: 14px;
+            text-align: center;
+            width: 100%;
+        }
+
+        .chart-placeholder img {
+            width: 100%;
+            height: auto;
+            max-height: 600px;
+            object-fit: contain;
+        }
+
+        /* Stats summary */
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 3px;
+            margin-bottom: 25px;
+        }
+
+        .summary-stat {
+            background-color: #fff;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+        }
+
+        .summary-title {
+            font-size: 12px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .summary-value {
+            font-size: 20px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        /* Colores */
+        .positive {
+            color: #27ae60;
+        }
+
+        .negative {
+            color: #e74c3c;
+        }
+
+        .neutral {
+            color: #2c3e50;
+        }
+
+        /* Pie de página */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 12px;
+            border-top: 1px solid #e0e0e0;
+            margin-top: 30px;
+        }
+
+        /* Clases de utilidad */
+        .text-right {
+            text-align: right;
+        }
+
+        .mt-10 {
+            margin-top: 10px;
+        }
+
+        .text-small {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        /* Estilos para drawdown stats */
+        .drawdown-stats {
+            background-color: rgba(231, 76, 60, 0.1);
+            border-left: 3px solid #e74c3c;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .drawdown-stats h3 {
+            color: #e74c3c;
+            margin-top: 0;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .drawdown-stats table {
+            margin-bottom: 0;
+        }
+
+        /* Ajustes responsivos */
+        @media (max-width: 768px) {
+            .summary-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-container {
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ title }}</h1>
+            <p>{{ subtitle }}</p>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <h2>Resumen de Resultados</h2>
+            </div>
+            <div class="section-content">
+                <div class="summary-stats">
+                    <div class="summary-stat">
+                        <div class="summary-title">Retorno Total</div>
+                        <div class="summary-value {% if metrics.total_return_pct > 0 %}positive{% else %}negative{% endif %}">
+                            {{ "%.2f" % metrics.total_return_pct }}%
+                        </div>
+                    </div>
+                    <div class="summary-stat">
+                        <div class="summary-title">CAGR</div>
+                        <div class="summary-value {% if metrics.cagr_pct > 0 %}positive{% else %}negative{% endif %}">
+                            {{ "%.2f" % metrics.cagr_pct }}%
+                        </div>
+                    </div>
+                    <div class="summary-stat">
+                        <div class="summary-title">Sharpe Ratio</div>
+                        <div class="summary-value neutral">
+                            {{ "%.2f" % metrics.sharpe_ratio }}
+                        </div>
+                    </div>
+                    <div class="summary-stat">
+                        <div class="summary-title">Max Drawdown</div>
+                        <div class="summary-value negative">
+                            {{ "%.2f" % metrics.max_drawdown_pct }}%
+                        </div>
+                    </div>
+                    <div class="summary-stat">
+                        <div class="summary-title">Win Rate</div>
+                        <div class="summary-value neutral">
+                            {{ "%.2f" % metrics.win_rate }}%
+                        </div>
+                    </div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Métrica</th>
+                            <th>Valor</th>
+                            <th>Métrica</th>
+                            <th>Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Capital Inicial</td>
+                            <td>${{ "%.2f" % metrics.initial_capital }}</td>
+                            <td>Total Operaciones</td>
+                            <td>{{ metrics.total_trades }}</td>
+                        </tr>
+                        <tr>
+                            <td>Capital Final</td>
+                            <td>${{ "%.2f" % metrics.final_equity }}</td>
+                            <td>Operaciones Ganadoras</td>
+                            <td>{{ metrics.winning_trades }} ({{ "%.2f" % metrics.win_rate }}%)</td>
+                        </tr>
+                        <tr>
+                            <td>Retorno Total</td>
+                            <td class="{% if metrics.total_return_pct > 0 %}positive{% else %}negative{% endif %}">
+                                {{ "%.2f" % metrics.total_return_pct }}%
+                            </td>
+                            <td>Operaciones Perdedoras</td>
+                            <td>{{ metrics.losing_trades }} ({{ "%.2f" % metrics.loss_rate }}%)</td>
+                        </tr>
+                        <tr>
+                            <td>CAGR</td>
+                            <td class="{% if metrics.cagr_pct > 0 %}positive{% else %}negative{% endif %}">
+                                {{ "%.2f" % metrics.cagr_pct }}%
+                            </td>
+                            <td>Profit Factor</td>
+                            <td>{{ "%.2f" % metrics.profit_factor }}</td>
+                        </tr>
+                        <tr>
+                            <td>Volatilidad Anualizada</td>
+                            <td>{{ "%.2f" % metrics.annual_volatility_pct }}%</td>
+                            <td>Expectativa Promedio</td>
+                            <td class="{% if metrics.expectancy > 0 %}positive{% else %}negative{% endif %}">
+                                {{ "%.2f" % metrics.expectancy }}%
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Sharpe Ratio</td>
+                            <td>{{ "%.2f" % metrics.sharpe_ratio }}</td>
+                            <td>Ratio Ganancia/Pérdida</td>
+                            <td>{{ "%.2f" % metrics.avg_win_loss_ratio }}</td>
+                        </tr>
+                        <tr>
+                            <td>Sortino Ratio</td>
+                            <td>{{ "%.2f" % metrics.sortino_ratio }}</td>
+                            <td>Duración Media</td>
+                            <td>{{ metrics.avg_trade_duration_str }}</td>
+                        </tr>
+                        <tr>
+                            <td>Máximo Drawdown</td>
+                            <td class="negative">{{ "%.2f" % metrics.max_drawdown_pct }}%</td>
+                            <td>Tiempo en Mercado</td>
+                            <td>{{ "%.2f" % metrics.time_in_market_pct }}%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <h2>Evolución del Capital</h2>
+            </div>
+            <div class="section-content">
+                <div class="chart-container">
+                    <div class="chart-placeholder">
+                        <img src="data:image/png;base64,{{ equity_curve_plot }}" alt="Curva de Capital">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <h2>Análisis de Drawdown</h2>
+            </div>
+            <div class="section-content">
+                <div class="chart-container">
+                    <div class="chart-placeholder">
+                        <img src="data:image/png;base64,{{ drawdown_plot }}" alt="Gráfico de Drawdown">
+                    </div>
+                </div>
+
+                {% if drawdown_periods %}
+                <div class="drawdown-stats">
+                    <h3>Períodos de Drawdown Significativos</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Período</th>
+                                <th>Profundidad</th>
+                                <th>Duración</th>
+                                <th>Recuperación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for period in drawdown_periods %}
+                            <tr>
+                                <td>{{ period.start_date }} a {{ period.end_date }}</td>
+                                <td class="negative">{{ "%.2f" % period.depth }}%</td>
+                                <td>{{ period.duration }} días</td>
+                                <td>{{ period.recovery }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <h2>Distribución de Rendimientos</h2>
+            </div>
+            <div class="section-content">
+                <div class="chart-container">
+                    <div class="chart-placeholder">
+                        <img src="data:image/png;base64,{{ returns_distribution_plot }}" alt="Distribución de Rendimientos">
+                    </div>
+                </div>
+
+                {% if returns_stats %}
+                <table class="mt-10">
+                    <thead>
+                        <tr>
+                            <th>Estadística</th>
+                            <th>Diaria</th>
+                            <th>Mensual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Media</td>
+                            <td>{{ "%.2f" % returns_stats.daily.mean }}%</td>
+                            <td>{{ "%.2f" % returns_stats.monthly.mean }}%</td>
+                        </tr>
+                        <tr>
+                            <td>Mediana</td>
+                            <td>{{ "%.2f" % returns_stats.daily.median }}%</td>
+                            <td>{{ "%.2f" % returns_stats.monthly.median }}%</td>
+                        </tr>
+                        <tr>
+                            <td>Desviación Estándar</td>
+                            <td>{{ "%.2f" % returns_stats.daily.std }}%</td>
+                            <td>{{ "%.2f" % returns_stats.monthly.std }}%</td>
+                        </tr>
+                        <tr>
+                            <td>Mínimo</td>
+                            <td class="negative">{{ "%.2f" % returns_stats.daily.min }}%</td>
+                            <td class="negative">{{ "%.2f" % returns_stats.monthly.min }}%</td>
+                        </tr>
+                        <tr>
+                            <td>Máximo</td>
+                            <td class="positive">{{ "%.2f" % returns_stats.daily.max }}%</td>
+                            <td class="positive">{{ "%.2f" % returns_stats.monthly.max }}%</td>
+                        </tr>
+                        <tr>
+                            <td>Asimetría</td>
+                            <td>{{ "%.2f" % returns_stats.daily.skew }}</td>
+                            <td>{{ "%.2f" % returns_stats.monthly.skew }}</td>
+                        </tr>
+                        <tr>
+                            <td>Curtosis</td>
+                            <td>{{ "%.2f" % returns_stats.daily.kurtosis }}</td>
+                            <td>{{ "%.2f" % returns_stats.monthly.kurtosis }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <h2>Rendimientos Mensuales (%)</h2>
+            </div>
+            <div class="section-content">
+                <div class="chart-container">
+                    <div class="chart-placeholder">
+                        <img src="data:image/png;base64,{{ monthly_returns_plot }}" alt="Rendimientos Mensuales">
+                    </div>
+                </div>
+
+                {% if monthly_returns_table %}
+                <table class="mt-10">
+                    <thead>
+                        <tr>
+                            <th>Año</th>
+                            <th>Ene</th>
+                            <th>Feb</th>
+                            <th>Mar</th>
+                            <th>Abr</th>
+                            <th>May</th>
+                            <th>Jun</th>
+                            <th>Jul</th>
+                            <th>Ago</th>
+                            <th>Sep</th>
+                            <th>Oct</th>
+                            <th>Nov</th>
+                            <th>Dic</th>
+                            <th>Anual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for year, months in monthly_returns_table.items() %}
+                        <tr>
+                            <td>{{ year }}</td>
+                            {% for month in range(1, 13) %}
+                                {% if month in months %}
+                                    <td class="{% if months[month] > 0 %}positive{% elif months[month] < 0 %}negative{% endif %}">
+                                        {{ "%.2f" % months[month] }}%
+                                    </td>
+                                {% else %}
+                                    <td>-</td>
+                                {% endif %}
+                            {% endfor %}
+                            <td class="{% if months.year_total > 0 %}positive{% elif months.year_total < 0 %}negative{% endif %}">
+                                {{ "%.2f" % months.year_total }}%
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <h2>Historial de Operaciones</h2>
+            </div>
+            <div class="section-content">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Entrada</th>
+                            <th>Tipo</th>
+                            <th>Precio Entrada</th>
+                            <th>Salida</th>
+                            <th>Precio Salida</th>
+                            <th>P/L</th>
+                            <th>P/L %</th>
+                            <th>Duración</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for trade in trades %}
+                        <tr class="{% if trade.profit_loss > 0 %}positive{% else %}negative{% endif %}">
+                            <td>{{ trade.entry_time }}</td>
+                            <td>{{ trade.entry_type }}</td>
+                            <td>${{ "%.2f" % trade.entry_price }}</td>
+                            <td>{{ trade.exit_time }}</td>
+                            <td>${{ "%.2f" % trade.exit_price }}</td>
+                            <td>${{ "%.2f" % trade.profit_loss }}</td>
+                            <td>{{ "%.2f" % trade.profit_loss_pct }}%</td>
+                            <td>{{ trade.duration_str }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <p class="text-small mt-10">* Las operaciones se realizaron utilizando el método de position sizing configurado.</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Reporte generado el {{ generation_time }} | Estrategia: {{ strategy_name }}</p>
+            <p>© {% now 'Y' %} Crypto Backtester Framework</p>
+        </div>
+    </div>
+</body>
+</html>
