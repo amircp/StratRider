@@ -17,20 +17,22 @@ class BacktestFramework:
     """
     Framework principal para backtesting de estrategias.
     """
-    
+
     def __init__(self,
-                connector: IDataConnector,
-                initial_capital: float = 10000.0,
-                commission_rate: float = 0.001,
-                slippage: float = 0.0,
-                position_sizing: str = 'percent',
-                position_size: float = 1.0,
-                max_open_positions: int = 1,
-                reports_dir: str = "./reports",
-                verbose: bool = True):
+                 connector: 'IDataConnector',
+                 initial_capital: float = 10000.0,
+                 commission_rate: float = 0.001,
+                 slippage: float = 0.0,
+                 position_sizing: str = 'percent',
+                 position_size: float = 1.0,
+                 max_open_positions: int = 1,
+                 reports_dir: str = "./reports",
+                 verbose: bool = True,
+                 report_engine: str = "plotly",
+                 report_template: Optional[str] = None):
         """
         Inicializa el framework de backtesting.
-        
+
         Args:
             connector: Conector de datos
             initial_capital: Capital inicial
@@ -41,6 +43,8 @@ class BacktestFramework:
             max_open_positions: Número máximo de posiciones abiertas
             reports_dir: Directorio para guardar reportes
             verbose: Si mostrar logs detallados
+            report_engine: Motor de gráficos para reportes ('plotly' o 'matplotlib')
+            report_template: Nombre de la plantilla a utilizar (opcional)
         """
         self.connector = connector
         self.initial_capital = initial_capital
@@ -51,7 +55,9 @@ class BacktestFramework:
         self.max_open_positions = max_open_positions
         self.reports_dir = reports_dir
         self.verbose = verbose
-        
+        self.report_engine = report_engine
+        self.report_template = report_template
+
         # Inicializar componentes
         self.processor = DataProcessor()
         self.engine = BacktestEngine(
@@ -63,8 +69,14 @@ class BacktestFramework:
             max_open_positions=max_open_positions
         )
         self.metrics_calculator = MetricsCalculator()
-        self.report_generator = ReportGenerator(output_dir=reports_dir)
-        
+
+        # Inicializar el generador de reportes con los nuevos parámetros
+        self.report_generator = ReportGenerator(
+            output_dir=reports_dir,
+            engine=report_engine,
+            template_name=report_template
+        )
+
         # Configurar logging
         logging_level = logging.INFO if verbose else logging.WARNING
         logging.basicConfig(
@@ -72,7 +84,7 @@ class BacktestFramework:
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         )
         self.logger = logging.getLogger('BacktestFramework')
-    
+
     def run_backtest(self,
                     symbol: str,
                     timeframe: str,
@@ -136,30 +148,30 @@ class BacktestFramework:
         self.logger.info(f"Backtest completado. Retorno total: {metrics['total_return_pct']:.2f}%, Win rate: {metrics['win_rate']:.2f}%")
         
         return result
-    
+
     def generate_report(self,
-                       backtest_result: Dict[str, Any],
-                       output_file: Optional[str] = None) -> str:
+                        backtest_result: Dict[str, Any],
+                        output_file: Optional[str] = None) -> str:
         """
         Genera un reporte HTML con los resultados del backtest.
-        
+
         Args:
             backtest_result: Resultados del backtest
             output_file: Nombre del archivo de salida (opcional)
-            
+
         Returns:
             Ruta al archivo HTML generado
         """
         self.logger.info("Generando reporte HTML...")
-        
+
         # Separar métricas y resultados
         metrics = {k: v for k, v in backtest_result.items() if k not in ['equity_curve', 'trades', 'result_data']}
-        
-        # Generar reporte
+
+        # Generar reporte usando el generador configurado
         report_path = self.report_generator.generate_html_report(backtest_result, metrics, output_file)
-        
+
         self.logger.info(f"Reporte generado: {report_path}")
-        
+
         return report_path
     
     def run_optimization(self,
