@@ -9,6 +9,9 @@ import logging
 import re
 from typing import Dict, Any, List, Optional, Tuple, Union
 from jinja2 import Template
+import json
+import plotly.graph_objects as go
+import plotly.utils
 
 # Importar las clases auxiliares
 try:
@@ -436,9 +439,7 @@ class ReportGenerator:
 
         return js_code
 
-    import json
-    import plotly.graph_objects as go
-    import plotly.utils
+
 
     def generate_drawdown_chart(self, drawdown_data: pd.DataFrame) -> str:
         """
@@ -641,7 +642,7 @@ class ReportGenerator:
             """
             return empty_js
 
-    def generate_trades_table(self, trades: pd.DataFrame) -> str:
+    def _generate_trades_table(self, trades: pd.DataFrame) -> str:
         """
         Genera el HTML para la tabla de operaciones con información detallada.
 
